@@ -33,7 +33,7 @@ export default async function onboarding(client, member) {
     collector.on("collect", async (reaction) => {
       const emoji = reaction.emoji.name;
       const roleMap = {
-        "🎓": "Étudiant",
+        "🎓": "Etudiant",
         "🎮": "Gamer",
         "💼": "Pro",
       };
