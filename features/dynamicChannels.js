@@ -1,49 +1,26 @@
 // features/dynamicChannels.js
 
-export default async function handleVoiceStateUpdate(
+export default async function handleDynamicChannels(
   client,
   oldState,
   newState
 ) {
-  const triggerChannelName = "🔊 créer salon"; // Nom du salon déclencheur
-  const guild = newState.guild;
-
-  // Si l’utilisateur rejoint un salon vocal nommé "🔊 créer salon"
-  if (
-    newState.channel &&
-    newState.channel.name === triggerChannelName &&
-    (!oldState.channel || oldState.channel.id !== newState.channel.id)
-  ) {
-    const user = newState.member.user;
-    const newChannelName = `Salon de ${user.username}`;
-
-    // Crée un nouveau salon vocal privé
-    const channel = await guild.channels.create({
-      name: newChannelName,
-      type: 2, // GUILD_VOICE
-      parent: newState.channel.parent, // même catégorie
-      permissionOverwrites: [
-        {
-          id: guild.id,
-          deny: ["Connect"],
-        },
-        {
-          id: user.id,
-          allow: ["Connect", "ManageChannels"],
-        },
-      ],
+  // Crée un salon dynamique si un utilisateur rejoint un salon vocal de base
+  if (newState.channel !== null && !newState.channel.name.includes(" - ")) {
+    const newChannel = await newState.channel.clone({
+      name: `${newState.channel.name} - ${
+        newState.member.nickname || newState.member.user.displayName
+      }`,
     });
+    await newState.member.voice.setChannel(newChannel);
+  }
 
-    // Déplace l’utilisateur dans le nouveau salon
-    await newState.setChannel(channel);
-
-    // Supprime le salon quand il est vide
-    const interval = setInterval(async () => {
-      const updated = guild.channels.cache.get(channel.id);
-      if (!updated || updated.members.size === 0) {
-        await channel.delete().catch(() => {});
-        clearInterval(interval);
-      }
-    }, 60_000); // Vérifie toutes les 60s
+  // Supprime un salon dynamique s'il est vide
+  if (
+    oldState.channel !== null &&
+    oldState.channel.members.size === 0 &&
+    oldState.channel.name.includes(" - ")
+  ) {
+    await oldState.channel.delete();
   }
 }
