@@ -2,20 +2,25 @@
 
 export default async function onboarding(client, member) {
   try {
-    const dm = await member.createDM();
+    const welcomeChannel =
+      member.guild.systemChannel ||
+      member.guild.channels.cache.find(
+        (c) => c.name.toLowerCase().includes("accueil") && c.isTextBased()
+      );
 
-    const message = await dm.send(
-      `👋 Bienvenue ${member.user.username} !\n\n` +
+    if (!welcomeChannel) return;
+
+    const message = await welcomeChannel.send({
+      content:
+        `👋 Bienvenue ${member.user} !\n\n` +
         `Choisis ton profil en cliquant sur un emoji :\n` +
-        `🎓 Étudiant\n🎮 Gamer\n💼 Pro`
-    );
+        `🎓 Étudiant\n🎮 Gamer\n💼 Pro`,
+    });
 
-    // Ajoute les réactions
     await message.react("🎓");
     await message.react("🎮");
     await message.react("💼");
 
-    // Filtre sur les emojis et l'auteur
     const filter = (reaction, user) =>
       ["🎓", "🎮", "💼"].includes(reaction.emoji.name) && user.id === member.id;
 
@@ -38,11 +43,11 @@ export default async function onboarding(client, member) {
 
       if (role) {
         await member.roles.add(role);
-        await dm.send(
-          `✅ Le rôle **${roleName}** t'a été attribué avec succès.`
+        await welcomeChannel.send(
+          `✅ ${member.user} a reçu le rôle **${roleName}**.`
         );
       } else {
-        await dm.send(
+        await welcomeChannel.send(
           `⚠️ Le rôle **${roleName}** n'existe pas sur ce serveur.`
         );
       }
@@ -50,10 +55,10 @@ export default async function onboarding(client, member) {
 
     collector.on("end", (collected) => {
       if (collected.size === 0) {
-        dm.send("⏳ Tu n’as pas réagi à temps. Tu peux réessayer plus tard.");
+        welcomeChannel.send(`⏳ ${member.user}, tu n’as pas réagi à temps.`);
       }
     });
   } catch (error) {
-    console.error("❌ Erreur dans l’onboarding :", error);
+    console.error("❌ Erreur onboarding :", error);
   }
 }
