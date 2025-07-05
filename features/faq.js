@@ -1,6 +1,7 @@
 // features/faq.js
 
 // FAQ simple : mappe des mots-clés à des réponses textuelles
+/*
 const faqMap = {
   horaire:
     "⏰ Les horaires sont flexibles mais dépendent de l'organisation du serveur.",
@@ -20,3 +21,15 @@ export default async function faqResponder(client, message) {
     }
   }
 }
+*/
+
+
+// database/faq.js
+import mongoose from "mongoose";
+
+const faqSchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true },
+  content: { type: String, required: true },
+});
+
+export default mongoose.model("FAQ", faqSchema);

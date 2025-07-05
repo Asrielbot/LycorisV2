@@ -1,4 +1,5 @@
 // events/messageCreate.js
+/*
 import faqResponder from "../features/faq.js";
 
 export default async function (client, message) {
@@ -7,4 +8,11 @@ export default async function (client, message) {
   if (config.faq !== false) {
     await faqResponder(client, message);
   }
+}
+*/
+
+import faqResponder from "../features/faq.js";
+
+export default async function (client, message) {
+  await faqResponder(client, message);
 }
