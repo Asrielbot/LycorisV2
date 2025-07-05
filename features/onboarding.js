@@ -32,23 +32,24 @@ export default async function onboarding(client, member) {
 
     collector.on("collect", async (reaction) => {
       const emoji = reaction.emoji.name;
+
       const roleMap = {
-        "🎓": "Etudiant",
-        "🎮": "Gamer",
-        "💼": "Pro",
+        "🎓": "1391085004653858928", // ID du rôle Etudiant
+        "🎮": "1391085024928862310", // ID du rôle Gamer
+        "💼": "1391085038862336121", // ID du rôle Pro
       };
 
-      const roleName = roleMap[emoji];
-      const role = member.guild.roles.cache.find((r) => r.name === roleName);
+      const roleId = roleMap[emoji];
+      const role = member.guild.roles.cache.get(roleId);
 
       if (role) {
         await member.roles.add(role);
         await welcomeChannel.send(
-          `✅ ${member.user} a reçu le rôle **${roleName}**.`
+          `✅ ${member.user} a reçu le rôle **${role.name}**.`
         );
       } else {
         await welcomeChannel.send(
-          `⚠️ Le rôle **${roleName}** n'existe pas sur ce serveur.`
+          `⚠️ Le rôle correspondant à l’emoji ${emoji} est introuvable.`
         );
       }
     });
