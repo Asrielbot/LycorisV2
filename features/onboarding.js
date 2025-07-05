@@ -1,34 +1,59 @@
 // features/onboarding.js
-export default async function onboarding(client, member) {
-  const channel = await member.createDM();
 
+export default async function onboarding(client, member) {
   try {
-    await channel.send(
+    const dm = await member.createDM();
+
+    const message = await dm.send(
       `👋 Bienvenue ${member.user.username} !\n\n` +
-        `Quel est ton profil ? Réagis avec :\n` +
+        `Choisis ton profil en cliquant sur un emoji :\n` +
         `🎓 Étudiant\n🎮 Gamer\n💼 Pro`
     );
 
-    const filter = (reaction) =>
-      ["🎓", "🎮", "💼"].includes(reaction.emoji.name);
-    const collector = channel.createMessageCollector({ time: 15000 });
+    // Ajoute les réactions
+    await message.react("🎓");
+    await message.react("🎮");
+    await message.react("💼");
 
-    collector.on("collect", async (message) => {
-      const emoji = message.content.trim();
-      let roleName = "";
+    // Filtre sur les emojis et l'auteur
+    const filter = (reaction, user) =>
+      ["🎓", "🎮", "💼"].includes(reaction.emoji.name) && user.id === member.id;
 
-      if (emoji === "🎓") roleName = "Étudiant";
-      else if (emoji === "🎮") roleName = "Gamer";
-      else if (emoji === "💼") roleName = "Pro";
-      else return;
+    const collector = message.createReactionCollector({
+      filter,
+      max: 1,
+      time: 30000,
+    });
 
+    collector.on("collect", async (reaction) => {
+      const emoji = reaction.emoji.name;
+      const roleMap = {
+        "🎓": "Étudiant",
+        "🎮": "Gamer",
+        "💼": "Pro",
+      };
+
+      const roleName = roleMap[emoji];
       const role = member.guild.roles.cache.find((r) => r.name === roleName);
-      if (role) await member.roles.add(role);
 
-      await channel.send(`✅ Rôle **${roleName}** ajouté avec succès !`);
-      collector.stop();
+      if (role) {
+        await member.roles.add(role);
+        await dm.send(
+          `✅ Le rôle **${roleName}** t'a été attribué avec succès.`
+        );
+      } else {
+        await dm.send(
+          `⚠️ Le rôle **${roleName}** n'existe pas sur ce serveur.`
+        );
+      }
+    });
+
+    collector.on("end", (collected) => {
+      if (collected.size === 0) {
+        dm.send("⏳ Tu n’as pas réagi à temps. Tu peux réessayer plus tard.");
+      }
     });
   } catch (error) {
-    console.error("❌ Erreur onboarding :", error);
+    console.error("❌ Erreur dans l’onboarding :", error);
   }
 }
