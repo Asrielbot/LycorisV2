@@ -1,32 +1,63 @@
 // features/onboarding.js
+
 export default async function onboarding(client, member) {
-  const channel = await member.createDM();
-
   try {
-    await channel.send(
-      `👋 Bienvenue ${member.user.username} !\n\n` +
-        `Quel est ton profil ? Réagis avec :\n` +
-        `🎓 Étudiant\n🎮 Gamer\n💼 Pro`
-    );
+    const welcomeChannel =
+      member.guild.systemChannel ||
+      member.guild.channels.cache.find(
+        (c) => c.name.toLowerCase().includes("accueil") && c.isTextBased()
+      );
 
-    const filter = (reaction) =>
-      ["🎓", "🎮", "💼"].includes(reaction.emoji.name);
-    const collector = channel.createMessageCollector({ time: 15000 });
+    if (!welcomeChannel) return;
 
-    collector.on("collect", async (message) => {
-      const emoji = message.content.trim();
-      let roleName = "";
+    const message = await welcomeChannel.send({
+      content:
+        `👋 Bienvenue ${member.user} !\n\n` +
+        `Choisis ton profil en cliquant sur un emoji :\n` +
+        `🎓 Étudiant\n🎮 Gamer\n💼 Pro`,
+    });
 
-      if (emoji === "🎓") roleName = "Étudiant";
-      else if (emoji === "🎮") roleName = "Gamer";
-      else if (emoji === "💼") roleName = "Pro";
-      else return;
+    await message.react("🎓");
+    await message.react("🎮");
+    await message.react("💼");
 
-      const role = member.guild.roles.cache.find((r) => r.name === roleName);
-      if (role) await member.roles.add(role);
+    const filter = (reaction, user) =>
+      ["🎓", "🎮", "💼"].includes(reaction.emoji.name) && user.id === member.id;
 
-      await channel.send(`✅ Rôle **${roleName}** ajouté avec succès !`);
-      collector.stop();
+    const collector = message.createReactionCollector({
+      filter,
+      max: 1,
+      time: 30000,
+    });
+
+    collector.on("collect", async (reaction) => {
+      const emoji = reaction.emoji.name;
+
+      const roleMap = {
+        "🎓": "1391085004653858928", // ID du rôle Etudiant
+        "🎮": "1391085024928862310", // ID du rôle Gamer
+        "💼": "1391085038862336121", // ID du rôle Pro
+      };
+
+      const roleId = roleMap[emoji];
+      const role = member.guild.roles.cache.get(roleId);
+
+      if (role) {
+        await member.roles.add(role);
+        await welcomeChannel.send(
+          `✅ ${member.user} a reçu le rôle **${role.name}**.`
+        );
+      } else {
+        await welcomeChannel.send(
+          `⚠️ Le rôle correspondant à l’emoji ${emoji} est introuvable.`
+        );
+      }
+    });
+
+    collector.on("end", (collected) => {
+      if (collected.size === 0) {
+        welcomeChannel.send(`⏳ ${member.user}, tu n’as pas réagi à temps.`);
+      }
     });
   } catch (error) {
     console.error("❌ Erreur onboarding :", error);
